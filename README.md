@@ -1,70 +1,129 @@
-# Getting Started with Create React App
+# BTP Devis - Application de gestion de devis pour le BTP
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Cette application permet aux entreprises du BTP (plombiers, électriciens, maçons, etc.) de créer et gérer facilement des devis pour leurs clients.
 
-## Available Scripts
+## Fonctionnalités
 
-In the project directory, you can run:
+- **Gestion des clients** : Ajout, modification et suppression de clients
+- **Création de devis** : Interface intuitive pour créer des devis multi-lots
+- **Gestion des ouvrages** : Possibilité d'ajouter plusieurs ouvrages (plomberie, électricité, etc.) dans un même devis
+- **Gestion des prestations** : Ajout de prestations détaillées pour chaque ouvrage
+- **Calcul automatique** : Calcul des totaux HT, TVA et TTC
+- **Suivi des statuts** : Suivi de l'état des devis (en cours, acceptés, refusés)
 
-### `npm start`
+## Modèle de données
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+L'application utilise Supabase comme backend et stocke les données dans les tables suivantes :
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+- `entreprises` : Informations sur les entreprises utilisatrices
+- `clients` : Informations sur les clients de chaque entreprise
+- `devis` : Informations générales sur les devis (client, montants, dates, etc.)
+- `ouvrages` : Catégories de prestations dans un devis (ex: "Plomberie", "Électricité")
+- `prestations` : Lignes détaillées dans chaque ouvrage (description, quantité, prix, etc.)
 
-### `npm test`
+## Configuration
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### Prérequis
 
-### `npm run build`
+- Node.js (v14 ou supérieur)
+- NPM ou Yarn
+- Compte Supabase
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### Installation
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+1. Clonez ce dépôt
+2. Installez les dépendances :
+   ```
+   npm install
+   ```
+3. Créez un fichier `.env` à la racine du projet avec vos informations Supabase :
+   ```
+   REACT_APP_SUPABASE_URL=votre_url_supabase
+   REACT_APP_SUPABASE_ANON_KEY=votre_clé_anon_supabase
+   ```
+4. Mettez à jour le fichier `src/supabaseClient.js` avec vos informations Supabase
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### Structure de la base de données Supabase
 
-### `npm run eject`
+Créez les tables suivantes dans votre projet Supabase :
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+#### Table `entreprises`
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+- `id` : uuid (primary key)
+- `user_id` : uuid (foreign key to auth.users)
+- `nom` : text
+- `created_at` : timestamp
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+#### Table `clients`
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+- `id` : uuid (primary key)
+- `entreprise_id` : uuid (foreign key to entreprises.id)
+- `nom` : text
+- `prenom` : text
+- `email` : text
+- `telephone` : text
+- `adresse` : text
+- `code_postal` : text
+- `ville` : text
+- `created_at` : timestamp
+- `updated_at` : timestamp
 
-## Learn More
+#### Table `devis`
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+- `id` : uuid (primary key)
+- `entreprise_id` : uuid (foreign key to entreprises.id)
+- `client_id` : uuid (foreign key to clients.id)
+- `reference` : text
+- `date_creation` : date
+- `date_validite` : date
+- `conditions_paiement` : text
+- `notes` : text
+- `taux_tva` : float
+- `montant_ht` : float
+- `montant_tva` : float
+- `montant_ttc` : float
+- `statut` : text (en_cours, accepte, refuse)
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+#### Table `ouvrages`
 
-### Code Splitting
+- `id` : uuid (primary key)
+- `devis_id` : uuid (foreign key to devis.id)
+- `titre` : text
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+#### Table `prestations`
 
-### Analyzing the Bundle Size
+- `id` : uuid (primary key)
+- `ouvrage_id` : uuid (foreign key to ouvrages.id)
+- `devis_id` : uuid (foreign key to devis.id)
+- `description` : text
+- `quantite` : float
+- `unite` : text
+- `prix_unitaire` : float
+- `total_ht` : float
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+### Lancement de l'application
 
-### Making a Progressive Web App
+```
+npm start
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+L'application sera disponible à l'adresse [http://localhost:3000](http://localhost:3000).
 
-### Advanced Configuration
+## Développement
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+### Technologies utilisées
 
-### Deployment
+- React
+- React Router
+- Supabase (authentification et base de données)
+- Tailwind CSS
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+### Structure du projet
 
-### `npm run build` fails to minify
+- `/src/components` : Composants réutilisables
+- `/src/pages` : Pages principales de l'application
+- `/src/supabaseClient.js` : Configuration de Supabase
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+## Licence
+
+MIT
