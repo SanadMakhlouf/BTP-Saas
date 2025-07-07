@@ -13,6 +13,7 @@ import Clients from "./pages/Clients";
 import Devis from "./pages/Devis";
 import CreerDevis from "./pages/CreerDevis";
 import ModifierDevis from "./pages/ModifierDevis";
+import Produits from "./pages/Produits";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 
@@ -81,6 +82,17 @@ function App() {
                 <>
                   <Navbar />
                   <ModifierDevis />
+                </>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/produits"
+            element={
+              <ProtectedRoute>
+                <>
+                  <Navbar />
+                  <Produits />
                 </>
               </ProtectedRoute>
             }

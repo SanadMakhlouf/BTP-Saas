@@ -22,6 +22,11 @@ const Navbar = () => {
               Devis
             </Link>
           </li>
+          <li>
+            <Link to="/produits" className="nav-link">
+              Produits
+            </Link>
+          </li>
         </ul>
       </div>
     </nav>

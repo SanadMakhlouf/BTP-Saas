@@ -22,6 +22,69 @@ export const mockClients = [
   },
 ];
 
+export const mockProduits = [
+  {
+    nom: "Ciment standard",
+    description: "Sac de ciment standard 35kg",
+    prix_unitaire: 12.5,
+    unite: "sac",
+  },
+  {
+    nom: "Plaque de plâtre BA13",
+    description: "Plaque de plâtre standard 250x120cm",
+    prix_unitaire: 8.75,
+    unite: "unité",
+  },
+  {
+    nom: "Peinture acrylique blanche",
+    description: "Pot de peinture acrylique blanche 10L",
+    prix_unitaire: 45.9,
+    unite: "pot",
+  },
+  {
+    nom: "Carrelage grès cérame",
+    description: "Carrelage grès cérame 60x60cm",
+    prix_unitaire: 29.5,
+    unite: "m2",
+  },
+  {
+    nom: "Parquet stratifié chêne",
+    description: "Parquet stratifié aspect chêne naturel",
+    prix_unitaire: 18.75,
+    unite: "m2",
+  },
+  {
+    nom: "Main d'œuvre ouvrier",
+    description: "Tarif horaire main d'œuvre ouvrier qualifié",
+    prix_unitaire: 35.0,
+    unite: "h",
+  },
+  {
+    nom: "Déplacement",
+    description: "Frais de déplacement forfaitaire",
+    prix_unitaire: 50.0,
+    unite: "forfait",
+  },
+  {
+    nom: "Câble électrique 2.5mm²",
+    description: "Câble électrique souple 2.5mm²",
+    prix_unitaire: 2.3,
+    unite: "ml",
+  },
+  {
+    nom: "Robinet mitigeur",
+    description: "Robinet mitigeur pour lavabo",
+    prix_unitaire: 89.9,
+    unite: "unité",
+  },
+  {
+    nom: "Tuyau PVC Ø100mm",
+    description: "Tuyau PVC évacuation Ø100mm",
+    prix_unitaire: 7.8,
+    unite: "ml",
+  },
+];
+
 export const mockDevis = [
   {
     id: 1,

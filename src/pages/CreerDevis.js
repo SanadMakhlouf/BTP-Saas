@@ -8,6 +8,7 @@ const CreerDevis = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [clients, setClients] = useState([]);
+  const [produits, setProduits] = useState([]);
 
   // État du formulaire principal
   const [formData, setFormData] = useState({
@@ -33,6 +34,7 @@ const CreerDevis = () => {
           unite: "unité",
           prix_unitaire: 0,
           total_ht: 0,
+          produit_id: "",
         },
       ],
     },
@@ -54,6 +56,8 @@ const CreerDevis = () => {
     { value: "h", label: "Heure" },
     { value: "j", label: "Jour" },
     { value: "forfait", label: "Forfait" },
+    { value: "sac", label: "Sac" },
+    { value: "pot", label: "Pot" },
   ];
 
   useEffect(() => {
@@ -89,7 +93,20 @@ const CreerDevis = () => {
           throw new Error("Impossible de récupérer la liste des clients");
         }
 
+        // Récupérer les produits
+        const { data: produitsData, error: produitsError } = await supabase
+          .from("produits")
+          .select("*")
+          .eq("user_id", session.user.id)
+          .order("nom");
+
+        if (produitsError) {
+          console.error("Erreur produits:", produitsError);
+          throw new Error("Impossible de récupérer la liste des produits");
+        }
+
         setClients(clientsData || []);
+        setProduits(produitsData || []);
         setLoading(false);
       } catch (error) {
         console.error("Erreur complète:", error);
@@ -127,6 +144,27 @@ const CreerDevis = () => {
     const newOuvrages = [...ouvrages];
     newOuvrages[ouvrageIndex].prestations[prestationIndex][name] = value;
 
+    // Si on sélectionne un produit, mettre à jour les informations de la prestation
+    if (name === "produit_id" && value) {
+      const produitSelectionne = produits.find((p) => p.id === value);
+      if (produitSelectionne) {
+        newOuvrages[ouvrageIndex].prestations[prestationIndex].description =
+          produitSelectionne.description || produitSelectionne.nom;
+        newOuvrages[ouvrageIndex].prestations[prestationIndex].unite =
+          produitSelectionne.unite;
+        newOuvrages[ouvrageIndex].prestations[prestationIndex].prix_unitaire =
+          produitSelectionne.prix_unitaire;
+
+        // Recalculer le total HT
+        const quantite =
+          parseFloat(
+            newOuvrages[ouvrageIndex].prestations[prestationIndex].quantite
+          ) || 0;
+        newOuvrages[ouvrageIndex].prestations[prestationIndex].total_ht =
+          quantite * produitSelectionne.prix_unitaire;
+      }
+    }
+
     // Calculer le total HT de la prestation
     if (name === "quantite" || name === "prix_unitaire") {
       const prestation = newOuvrages[ouvrageIndex].prestations[prestationIndex];
@@ -157,6 +195,7 @@ const CreerDevis = () => {
             unite: "unité",
             prix_unitaire: 0,
             total_ht: 0,
+            produit_id: "",
           },
         ],
       },
@@ -189,6 +228,7 @@ const CreerDevis = () => {
       unite: "unité",
       prix_unitaire: 0,
       total_ht: 0,
+      produit_id: "",
     });
 
     setOuvrages(newOuvrages);
@@ -327,6 +367,7 @@ const CreerDevis = () => {
             unite: prestation.unite,
             prix_unitaire: parseFloat(prestation.prix_unitaire),
             total_ht: parseFloat(prestation.total_ht),
+            produit_id: prestation.produit_id || null,
             ordre: prestationIndex,
           })
         );
@@ -506,6 +547,29 @@ const CreerDevis = () => {
                   {ouvrage.prestations.map((prestation, prestationIndex) => (
                     <div key={prestation.id} className="prestation-item">
                       <div className="prestation-grid">
+                        <div className="produit-select-container">
+                          <select
+                            value={prestation.produit_id}
+                            onChange={(e) =>
+                              handlePrestationChange(
+                                ouvrageIndex,
+                                prestationIndex,
+                                "produit_id",
+                                e.target.value
+                              )
+                            }
+                            className="produit-select"
+                          >
+                            <option value="">Sélectionner un produit</option>
+                            {produits.map((produit) => (
+                              <option key={produit.id} value={produit.id}>
+                                {produit.nom} -{" "}
+                                {produit.prix_unitaire.toFixed(2)} €/
+                                {produit.unite}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
                         <input
                           type="text"
                           value={prestation.description}
