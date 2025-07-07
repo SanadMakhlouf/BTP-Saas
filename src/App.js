@@ -16,6 +16,8 @@ import ModifierDevis from "./pages/ModifierDevis";
 import Produits from "./pages/Produits";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import Factures from "./pages/Factures";
+import UserProfile from "./pages/UserProfile";
 
 // Components
 import Navbar from "./components/Navbar";
@@ -25,6 +27,7 @@ function App() {
   return (
     <Router>
       <div className="App">
+        <Navbar />
         <Routes>
           {/* Routes publiques */}
           <Route path="/login" element={<Login />} />
@@ -35,10 +38,7 @@ function App() {
             path="/"
             element={
               <ProtectedRoute>
-                <>
-                  <Navbar />
-                  <Dashboard />
-                </>
+                <Dashboard />
               </ProtectedRoute>
             }
           />
@@ -46,10 +46,7 @@ function App() {
             path="/clients"
             element={
               <ProtectedRoute>
-                <>
-                  <Navbar />
-                  <Clients />
-                </>
+                <Clients />
               </ProtectedRoute>
             }
           />
@@ -57,32 +54,23 @@ function App() {
             path="/devis"
             element={
               <ProtectedRoute>
-                <>
-                  <Navbar />
-                  <Devis />
-                </>
+                <Devis />
               </ProtectedRoute>
             }
           />
           <Route
-            path="/devis/creer"
+            path="/creer-devis"
             element={
               <ProtectedRoute>
-                <>
-                  <Navbar />
-                  <CreerDevis />
-                </>
+                <CreerDevis />
               </ProtectedRoute>
             }
           />
           <Route
-            path="/devis/:id/modifier"
+            path="/modifier-devis/:id"
             element={
               <ProtectedRoute>
-                <>
-                  <Navbar />
-                  <ModifierDevis />
-                </>
+                <ModifierDevis />
               </ProtectedRoute>
             }
           />
@@ -90,10 +78,23 @@ function App() {
             path="/produits"
             element={
               <ProtectedRoute>
-                <>
-                  <Navbar />
-                  <Produits />
-                </>
+                <Produits />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/factures"
+            element={
+              <ProtectedRoute>
+                <Factures />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <UserProfile />
               </ProtectedRoute>
             }
           />

@@ -1,134 +1,295 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { PDFDownloadLink } from "@react-pdf/renderer";
 import supabase from "../supabaseClient";
+import DevisPDF from "../components/DevisPDF";
 import "../styles/pages/Devis.css";
 
 const Devis = () => {
-  const navigate = useNavigate();
-  const [devis, setDevis] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showForm, setShowForm] = useState(false);
-  const [filter, setFilter] = useState("tous");
+  const [devis, setDevis] = useState([]);
+  const [filteredDevis, setFilteredDevis] = useState([]);
+  const [clients, setClients] = useState([]);
+  const [selectedDevis, setSelectedDevis] = useState(null);
+  const [statusLoading, setStatusLoading] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const navigate = useNavigate();
+
+  // Liste des statuts disponibles
+  const statusOptions = [
+    { value: "en_cours", label: "En cours" },
+    { value: "envoyé", label: "Envoyé" },
+    { value: "accepté", label: "Accepté" },
+    { value: "refusé", label: "Refusé" },
+    { value: "annulé", label: "Annulé" },
+  ];
+
+  useEffect(() => {
+    fetchDevis();
+    fetchClients();
+  }, []);
+
+  // Effet pour filtrer les devis quand searchTerm change
+  useEffect(() => {
+    if (searchTerm.trim() === "") {
+      setFilteredDevis(devis);
+    } else {
+      const filtered = devis.filter((d) => {
+        const clientName = d.client?.nom?.toLowerCase() || "";
+        return clientName.includes(searchTerm.toLowerCase());
+      });
+      setFilteredDevis(filtered);
+    }
+  }, [searchTerm, devis]);
 
   const fetchDevis = async () => {
     try {
-      // Vérifier la session
       const {
         data: { session },
-        error: authError,
       } = await supabase.auth.getSession();
 
-      if (authError) {
-        console.error("Erreur d'authentification:", authError);
-        throw new Error(
-          "Erreur d'authentification. Veuillez vous reconnecter."
-        );
-      }
-
       if (!session) {
-        navigate("/login");
-        return;
+        throw new Error("Utilisateur non connecté");
       }
 
-      // Récupérer les devis
-      const { data: devisData, error: devisError } = await supabase
+      const { data, error } = await supabase
         .from("devis")
         .select(
           `
           *,
-          client:clients(nom)
+          client:clients(*)
         `
         )
         .eq("user_id", session.user.id)
-        .order("date_creation", { ascending: false });
+        .order("created_at", { ascending: false });
 
-      if (devisError) {
-        console.error("Erreur devis:", devisError);
-        throw new Error("Impossible de récupérer la liste des devis");
+      if (error) {
+        throw error;
       }
 
-      setDevis(devisData || []);
+      setDevis(data || []);
+      setLoading(false);
     } catch (error) {
-      console.error("Erreur complète:", error);
-      setError(error.message || "Une erreur est survenue");
-    } finally {
+      console.error("Erreur lors de la récupération des devis:", error);
+      setError(error.message);
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchDevis();
-  }, [navigate]);
-
-  const handleCreateDevis = () => {
-    navigate("/devis/creer");
-  };
-
-  const handleDelete = async (id) => {
+  const fetchClients = async () => {
     try {
-      const { error: devisError } = await supabase
-        .from("devis")
-        .delete()
-        .eq("id", id);
+      const { data, error } = await supabase
+        .from("clients")
+        .select("*")
+        .order("nom");
 
-      if (devisError) throw devisError;
-      await fetchDevis();
+      if (error) {
+        throw error;
+      }
+
+      setClients(data || []);
     } catch (error) {
-      console.error("Erreur lors de la suppression du devis:", error);
-      setError("Erreur lors de la suppression du devis");
+      console.error("Erreur lors de la récupération des clients:", error);
     }
   };
 
-  const handleStatusChange = async (id, newStatus) => {
+  const handleCreateFacture = async (devis) => {
     try {
-      const { error } = await supabase
+      setLoading(true);
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) {
+        throw new Error("Utilisateur non connecté");
+      }
+
+      // Vérifier si une facture existe déjà pour ce devis
+      const { data: existingFacture, error: checkError } = await supabase
+        .from("factures")
+        .select("id")
+        .eq("devis_id", devis.id)
+        .single();
+
+      if (checkError && checkError.code !== "PGRST116") {
+        throw checkError;
+      }
+
+      if (existingFacture) {
+        throw new Error("Une facture existe déjà pour ce devis");
+      }
+
+      // Vérifier que le devis est bien accepté
+      if (devis.statut !== "accepté") {
+        throw new Error("Le devis doit être accepté pour créer une facture");
+      }
+
+      // Générer le numéro de facture (FACT-YYYY-XXX)
+      const date = new Date();
+      const year = date.getFullYear();
+      const { data: lastFacture, error: countError } = await supabase
+        .from("factures")
+        .select("numero")
+        .ilike("numero", `FACT-${year}-%`)
+        .order("numero", { ascending: false })
+        .limit(1);
+
+      if (countError) {
+        throw countError;
+      }
+
+      let numero = 1;
+      if (lastFacture && lastFacture.length > 0) {
+        const lastNumber = parseInt(lastFacture[0].numero.split("-")[2]);
+        numero = lastNumber + 1;
+      }
+
+      const numeroFacture = `FACT-${year}-${String(numero).padStart(3, "0")}`;
+
+      // Calculer la date d'échéance (30 jours)
+      const dateEmission = new Date().toISOString().split("T")[0];
+      const dateEcheance = new Date();
+      dateEcheance.setDate(dateEcheance.getDate() + 30);
+
+      // Créer la facture
+      const { data: newFacture, error: createError } = await supabase
+        .from("factures")
+        .insert({
+          numero: numeroFacture,
+          devis_id: devis.id,
+          date_emission: dateEmission,
+          date_echeance: dateEcheance.toISOString().split("T")[0],
+          montant_ht: devis.montant_ht,
+          tva: devis.taux_tva,
+          montant_ttc: devis.montant_ttc,
+          conditions_paiement:
+            devis.conditions_paiement || "Paiement à 30 jours",
+          user_id: session.user.id,
+          statut: "en_attente",
+        })
+        .select()
+        .single();
+
+      if (createError) {
+        throw createError;
+      }
+
+      setLoading(false);
+      // Rediriger vers la facture créée
+      navigate(`/factures/${newFacture.id}`);
+    } catch (error) {
+      console.error("Erreur lors de la création de la facture:", error);
+      setError(error.message || "Erreur lors de la création de la facture");
+      setLoading(false);
+    }
+  };
+
+  const formatDate = (date) => {
+    return new Date(date).toLocaleDateString("fr-FR");
+  };
+
+  const formatMontant = (montant) => {
+    return new Intl.NumberFormat("fr-FR", {
+      style: "currency",
+      currency: "EUR",
+    }).format(montant);
+  };
+
+  const getStatusBadgeClass = (statut) => {
+    switch (statut) {
+      case "accepté":
+        return "status-badge success";
+      case "en_cours":
+        return "status-badge warning";
+      case "refusé":
+      case "annulé":
+        return "status-badge danger";
+      case "envoyé":
+        return "status-badge info";
+      default:
+        return "status-badge";
+    }
+  };
+
+  const getStatusLabel = (statut) => {
+    switch (statut) {
+      case "accepté":
+        return "Accepté";
+      case "en_cours":
+        return "En cours";
+      case "refusé":
+        return "Refusé";
+      case "annulé":
+        return "Annulé";
+      case "envoyé":
+        return "Envoyé";
+      default:
+        return statut;
+    }
+  };
+
+  const handlePreparePDF = async (id) => {
+    try {
+      const { data: devisData } = await supabase
+        .from("devis")
+        .select(
+          "*, client:clients(*), ouvrages:ouvrages(*, prestations:prestations(*))"
+        )
+        .eq("id", id)
+        .single();
+
+      if (!devisData) {
+        throw new Error("Devis non trouvé");
+      }
+
+      const { data: userData } = await supabase.auth.getUser();
+
+      setSelectedDevis({
+        devis: devisData,
+        client: devisData.client,
+        user: userData.user,
+      });
+    } catch (error) {
+      console.error("Erreur lors de la préparation du PDF:", error);
+      setError(error.message);
+    }
+  };
+
+  // Fonction pour changer le statut d'un devis
+  const handleStatusChange = async (devisId, newStatus) => {
+    try {
+      setStatusLoading(devisId);
+      const { error: updateError } = await supabase
         .from("devis")
         .update({ statut: newStatus })
-        .eq("id", id);
+        .eq("id", devisId);
 
-      if (error) throw error;
-      await fetchDevis();
+      if (updateError) throw updateError;
+
+      // Mettre à jour l'état local
+      setDevis(
+        devis.map((d) => (d.id === devisId ? { ...d, statut: newStatus } : d))
+      );
     } catch (error) {
-      console.error("Erreur lors de la mise à jour du statut:", error);
-      setError("Erreur lors de la mise à jour du statut");
+      console.error("Erreur lors du changement de statut:", error);
+      setError("Erreur lors du changement de statut du devis");
+    } finally {
+      setStatusLoading(null);
     }
   };
 
-  const getStatusClass = (status) => {
-    const statusClasses = {
-      en_cours: "status-pending",
-      envoye: "status-sent",
-      accepte: "status-accepted",
-      refuse: "status-rejected",
-      annule: "status-cancelled",
-    };
-    return `status ${statusClasses[status] || "status-pending"}`;
-  };
-
-  const filteredDevis =
-    filter === "tous" ? devis : devis.filter((d) => d.statut === filter);
-
   if (loading) {
-    return (
-      <div className="devis-container">
-        <div className="loading">Chargement des devis...</div>
-      </div>
-    );
+    return <div className="loading">Chargement...</div>;
   }
 
   if (error) {
     return (
-      <div className="devis-container">
-        <div className="alert alert-error">
-          {error}
-          <button
-            onClick={() => window.location.reload()}
-            className="btn-retry"
-          >
-            Réessayer
-          </button>
-        </div>
+      <div className="alert alert-error">
+        <span>{error}</span>
+        <button onClick={fetchDevis} className="btn-retry">
+          Réessayer
+        </button>
       </div>
     );
   }
@@ -136,110 +297,164 @@ const Devis = () => {
   return (
     <div className="devis-container">
       <div className="devis-header">
-        <h1>Devis</h1>
-        <button className="btn-add" onClick={handleCreateDevis}>
-          Créer un devis
-        </button>
+        <div className="header-left">
+          <h1>Devis</h1>
+          <div className="search-container">
+            <input
+              type="text"
+              placeholder="Rechercher par nom de client..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="search-input"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm("")}
+                className="clear-search"
+                title="Effacer la recherche"
+              >
+                ×
+              </button>
+            )}
+          </div>
+        </div>
+        <Link to="/creer-devis" className="btn-add">
+          + Nouveau devis
+        </Link>
       </div>
 
-      <div className="devis-list">
-        {devis.length === 0 ? (
-          <div className="empty-state">
-            Aucun devis pour le moment. Commencez par en créer un !
-          </div>
-        ) : (
-          <div className="table-responsive">
-            <table>
-              <thead>
-                <tr>
-                  <th>Référence</th>
-                  <th>Client</th>
-                  <th>Date création</th>
-                  <th>Montant HT</th>
-                  <th>Montant TTC</th>
-                  <th>Statut</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {devis.map((devis) => (
-                  <tr key={devis.id}>
-                    <td>{devis.reference}</td>
-                    <td>{devis.client?.nom || "-"}</td>
-                    <td>
-                      {new Date(devis.date_creation).toLocaleDateString()}
-                    </td>
-                    <td>{devis.montant_ht.toFixed(2)} €</td>
-                    <td>{devis.montant_ttc.toFixed(2)} €</td>
-                    <td>
+      {filteredDevis.length === 0 ? (
+        <div className="no-data">
+          {searchTerm
+            ? "Aucun devis trouvé pour ce client."
+            : "Aucun devis trouvé. Créez votre premier devis !"}
+        </div>
+      ) : (
+        <div className="table-container">
+          <table className="devis-table">
+            <thead>
+              <tr>
+                <th>N° Devis</th>
+                <th>Client</th>
+                <th>Date</th>
+                <th>Montant HT</th>
+                <th>TVA</th>
+                <th>Montant TTC</th>
+                <th>Statut</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredDevis.map((devis) => (
+                <tr key={devis.id}>
+                  <td>{devis.reference || "N° non défini"}</td>
+                  <td className="client">
+                    {devis.client?.nom || "Client inconnu"}
+                  </td>
+                  <td className="date">{formatDate(devis.created_at)}</td>
+                  <td className="montant">{formatMontant(devis.montant_ht)}</td>
+                  <td>
+                    {devis.taux_tva ? `${devis.taux_tva}%` : "Non définie"}
+                  </td>
+                  <td className="montant">
+                    {formatMontant(devis.montant_ttc)}
+                  </td>
+                  <td>
+                    <div className="status-selector">
                       <select
                         value={devis.statut}
                         onChange={(e) =>
                           handleStatusChange(devis.id, e.target.value)
                         }
-                        className={`status ${devis.statut}`}
+                        disabled={statusLoading === devis.id}
+                        className={`status-select ${getStatusBadgeClass(
+                          devis.statut
+                        )}`}
                       >
-                        <option value="en_cours">En cours</option>
-                        <option value="envoyé">Envoyé</option>
-                        <option value="accepté">Accepté</option>
-                        <option value="refusé">Refusé</option>
-                        <option value="annulé">Annulé</option>
+                        {statusOptions.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
                       </select>
-                    </td>
-                    <td>
+                      {statusLoading === devis.id && (
+                        <span className="status-loading">
+                          <i className="fas fa-spinner fa-spin"></i>
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="actions">
+                    <div className="table-actions">
+                      {devis.statut === "en_cours" ||
+                      devis.statut === "envoyé" ? (
+                        <Link
+                          to={`/modifier-devis/${devis.id}`}
+                          className="btn-action btn-edit"
+                          title="Modifier le devis"
+                        >
+                          Modifier
+                        </Link>
+                      ) : (
+                        <Link
+                          to={`/devis/${devis.id}`}
+                          className="btn-action btn-view"
+                          title="Voir le devis"
+                        >
+                          Voir
+                        </Link>
+                      )}
                       <button
-                        onClick={() => navigate(`/devis/${devis.id}`)}
-                        className="btn-view"
+                        onClick={() => handlePreparePDF(devis.id)}
+                        className="btn-action btn-download"
+                        title="Télécharger en PDF"
                       >
-                        Voir
+                        PDF
                       </button>
                       <button
-                        onClick={() => handleDelete(devis.id)}
-                        className="btn-delete"
+                        onClick={() => handleCreateFacture(devis)}
+                        className="btn-action btn-create-facture"
+                        disabled={devis.statut !== "accepté"}
+                        title={
+                          devis.statut !== "accepté"
+                            ? "Le devis doit être accepté pour créer une facture"
+                            : "Créer une facture"
+                        }
                       >
-                        Supprimer
+                        Facture
                       </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
-      <div className="filter-buttons">
-        <button
-          onClick={() => setFilter("tous")}
-          className={`filter-btn ${filter === "tous" ? "active" : ""}`}
-        >
-          Tous
-        </button>
-        <button
-          onClick={() => setFilter("en_cours")}
-          className={`filter-btn ${filter === "en_cours" ? "active" : ""}`}
-        >
-          En cours
-        </button>
-        <button
-          onClick={() => setFilter("envoye")}
-          className={`filter-btn ${filter === "envoye" ? "active" : ""}`}
-        >
-          Envoyés
-        </button>
-        <button
-          onClick={() => setFilter("accepte")}
-          className={`filter-btn ${filter === "accepte" ? "active" : ""}`}
-        >
-          Acceptés
-        </button>
-        <button
-          onClick={() => setFilter("refuse")}
-          className={`filter-btn ${filter === "refuse" ? "active" : ""}`}
-        >
-          Refusés
-        </button>
-      </div>
+      {/* Modal pour le PDF */}
+      {selectedDevis && (
+        <div className="pdf-modal">
+          <div className="pdf-modal-content">
+            <h3>Télécharger le devis</h3>
+            <PDFDownloadLink
+              document={<DevisPDF {...selectedDevis} />}
+              fileName={`${selectedDevis.devis.numero}.pdf`}
+              className="btn-download-pdf"
+            >
+              {({ loading }) =>
+                loading ? "Préparation..." : "Télécharger le PDF"
+              }
+            </PDFDownloadLink>
+            <button
+              onClick={() => setSelectedDevis(null)}
+              className="btn-close-modal"
+            >
+              Fermer
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

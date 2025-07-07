@@ -94,12 +94,9 @@ const Dashboard = () => {
             <h1>Tableau de bord</h1>
           </div>
           <div className="header-right">
-            <Link to="/devis/creer" className="btn-create">
+            <Link to="/creer-devis" className="btn-create">
               <i className="fas fa-plus"></i> Nouveau devis
             </Link>
-            <button onClick={handleLogout} className="btn-logout">
-              <i className="fas fa-sign-out-alt"></i> Déconnexion
-            </button>
           </div>
         </div>
 
@@ -199,17 +196,27 @@ const Dashboard = () => {
                       }}
                     >
                       <Link
-                        to={`/devis/${devis.id}/modifier`}
+                        to={`/devis/${devis.id}`}
+                        className="btn-action view"
+                        title="Voir le devis"
+                      >
+                        <i className="fas fa-eye"></i>
+                      </Link>
+                      <Link
+                        to={`/modifier-devis/${devis.id}`}
                         className="btn-action edit"
+                        title="Modifier le devis"
                       >
                         <i className="fas fa-edit"></i>
                       </Link>
-                      <button
-                        className="btn-action pdf"
-                        onClick={() => handlePreparePDF(devis.id)}
-                      >
-                        <i className="fas fa-file-pdf"></i>
-                      </button>
+                      {selectedDevis?.devis?.id === devis.id ? (
+                        <button
+                          className="btn-action pdf"
+                          onClick={() => handlePreparePDF(devis.id)}
+                        >
+                          <i className="fas fa-file-pdf"></i>
+                        </button>
+                      ) : null}
                     </td>
                   </tr>
                 ))}
