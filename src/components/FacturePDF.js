@@ -18,10 +18,21 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: 30,
   },
+  headerLeft: {
+    width: "60%",
+  },
+  headerRight: {
+    width: "35%",
+    textAlign: "right",
+  },
+  companyInfo: {
+    marginBottom: 30,
+  },
   title: {
     fontSize: 24,
     fontWeight: "bold",
     marginBottom: 20,
+    color: "#2563eb",
   },
   infoSection: {
     marginBottom: 20,
@@ -30,26 +41,28 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "bold",
     marginBottom: 5,
+    color: "#374151",
   },
   infoText: {
     marginBottom: 3,
+    color: "#4b5563",
   },
   table: {
     marginTop: 20,
   },
   tableHeader: {
     flexDirection: "row",
+    backgroundColor: "#f3f4f6",
+    padding: 8,
     borderBottomWidth: 1,
-    borderBottomColor: "#000",
-    paddingBottom: 5,
-    marginBottom: 10,
+    borderBottomColor: "#e5e7eb",
     fontWeight: "bold",
   },
   tableRow: {
     flexDirection: "row",
-    paddingVertical: 5,
-    borderBottomWidth: 0.5,
-    borderBottomColor: "#999",
+    padding: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e5e7eb",
   },
   col1: { width: "40%" },
   col2: { width: "15%" },
@@ -66,10 +79,14 @@ const styles = StyleSheet.create({
   },
   totalLabel: {
     width: 100,
+    textAlign: "right",
+    marginRight: 10,
+    color: "#374151",
   },
   totalValue: {
     width: 100,
     textAlign: "right",
+    color: "#111827",
   },
   footer: {
     position: "absolute",
@@ -77,48 +94,72 @@ const styles = StyleSheet.create({
     left: 30,
     right: 30,
     textAlign: "center",
+    color: "#6b7280",
     fontSize: 10,
-    color: "#666",
+    borderTopWidth: 1,
+    borderTopColor: "#e5e7eb",
+    paddingTop: 10,
   },
 });
 
-const FacturePDF = ({ facture, client, user }) => {
+const FacturePDF = ({ facture, client, userProfile }) => {
   const formatDate = (date) => {
     return new Date(date).toLocaleDateString("fr-FR");
   };
 
   const formatMontant = (montant) => {
     return new Intl.NumberFormat("fr-FR", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
+      style: "currency",
+      currency: "EUR",
     }).format(montant);
   };
 
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        {/* En-tête */}
+        {/* En-tête avec informations de l'entreprise */}
         <View style={styles.header}>
-          <View>
+          <View style={styles.headerLeft}>
+            {userProfile && (
+              <View style={styles.companyInfo}>
+                <Text style={styles.infoTitle}>{userProfile.company_name}</Text>
+                <Text style={styles.infoText}>{userProfile.address}</Text>
+                <Text style={styles.infoText}>
+                  {userProfile.postal_code} {userProfile.city}
+                </Text>
+                {userProfile.phone && (
+                  <Text style={styles.infoText}>Tél : {userProfile.phone}</Text>
+                )}
+                <Text style={styles.infoText}>Email : {userProfile.email}</Text>
+                {userProfile.website && (
+                  <Text style={styles.infoText}>
+                    Web : {userProfile.website}
+                  </Text>
+                )}
+              </View>
+            )}
             <Text style={styles.title}>FACTURE</Text>
-            <Text>N° {facture.numero}</Text>
-            <Text>Date : {formatDate(facture.date_emission)}</Text>
+            <Text style={styles.infoText}>N° {facture.numero}</Text>
+            <Text style={styles.infoText}>
+              Date : {formatDate(facture.date_emission)}
+            </Text>
+            <Text style={styles.infoText}>
+              Échéance : {formatDate(facture.date_echeance)}
+            </Text>
           </View>
-        </View>
-
-        {/* Informations client et émetteur */}
-        <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-          <View style={styles.infoSection}>
-            <Text style={styles.infoTitle}>Émetteur :</Text>
-            <Text style={styles.infoText}>{user.email}</Text>
-          </View>
-          <View style={styles.infoSection}>
-            <Text style={styles.infoTitle}>Client :</Text>
+          <View style={styles.headerRight}>
+            <Text style={styles.infoTitle}>Client</Text>
             <Text style={styles.infoText}>{client.nom}</Text>
             <Text style={styles.infoText}>{client.adresse}</Text>
             <Text style={styles.infoText}>
               {client.code_postal} {client.ville}
             </Text>
+            {client.telephone && (
+              <Text style={styles.infoText}>Tél : {client.telephone}</Text>
+            )}
+            {client.email && (
+              <Text style={styles.infoText}>Email : {client.email}</Text>
+            )}
             {client.numero_tva && (
               <Text style={styles.infoText}>N° TVA : {client.numero_tva}</Text>
             )}
@@ -140,10 +181,10 @@ const FacturePDF = ({ facture, client, user }) => {
               <Text style={styles.col2}>{prestation.quantite}</Text>
               <Text style={styles.col3}>{prestation.unite}</Text>
               <Text style={styles.col4}>
-                {formatMontant(prestation.prix_unitaire)} €
+                {formatMontant(prestation.prix_unitaire)}
               </Text>
               <Text style={styles.col5}>
-                {formatMontant(prestation.total_ht)} €
+                {formatMontant(prestation.total_ht)}
               </Text>
             </View>
           ))}
@@ -154,19 +195,21 @@ const FacturePDF = ({ facture, client, user }) => {
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Total HT :</Text>
             <Text style={styles.totalValue}>
-              {formatMontant(facture.montant_ht)} €
+              {formatMontant(facture.montant_ht)}
             </Text>
           </View>
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>TVA ({facture.tva}%) :</Text>
             <Text style={styles.totalValue}>
-              {formatMontant(facture.montant_ht * (facture.tva / 100))} €
+              {formatMontant(facture.montant_ht * (facture.tva / 100))}
             </Text>
           </View>
           <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Total TTC :</Text>
-            <Text style={styles.totalValue}>
-              {formatMontant(facture.montant_ttc)} €
+            <Text style={[styles.totalLabel, { fontWeight: "bold" }]}>
+              Total TTC :
+            </Text>
+            <Text style={[styles.totalValue, { fontWeight: "bold" }]}>
+              {formatMontant(facture.montant_ttc)}
             </Text>
           </View>
         </View>
@@ -174,14 +217,22 @@ const FacturePDF = ({ facture, client, user }) => {
         {/* Conditions de paiement */}
         <View style={{ marginTop: 40 }}>
           <Text style={styles.infoTitle}>Conditions de paiement :</Text>
-          <Text>{facture.conditions_paiement}</Text>
-          <Text>Date d'échéance : {formatDate(facture.date_echeance)}</Text>
+          <Text style={styles.infoText}>{facture.conditions_paiement}</Text>
         </View>
 
-        {/* Pied de page */}
-        <View style={styles.footer}>
-          <Text>Facture générée le {formatDate(new Date())}</Text>
-        </View>
+        {/* Pied de page avec informations légales */}
+        {userProfile && (
+          <Text style={styles.footer}>
+            {userProfile.company_name} - {userProfile.address},{" "}
+            {userProfile.postal_code} {userProfile.city}
+            {"\n"}
+            SIRET : {userProfile.siret}
+            {userProfile.vat_number ? ` - TVA : ${userProfile.vat_number}` : ""}
+            {userProfile.bank_name ? `\nBanque : ${userProfile.bank_name}` : ""}
+            {userProfile.bank_iban ? ` - IBAN : ${userProfile.bank_iban}` : ""}
+            {userProfile.bank_bic ? ` - BIC : ${userProfile.bank_bic}` : ""}
+          </Text>
+        )}
       </Page>
     </Document>
   );

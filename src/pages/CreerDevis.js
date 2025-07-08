@@ -18,7 +18,7 @@ const CreerDevis = () => {
     date_validite: "",
     conditions_paiement: "À réception de facture",
     notes: "",
-    taux_tva: 20,
+    taux_tva: 20, // Valeur par défaut
   });
 
   // État pour les ouvrages et prestations
@@ -60,25 +60,38 @@ const CreerDevis = () => {
     { value: "pot", label: "Pot" },
   ];
 
+  // Effet pour charger le profil utilisateur et initialiser les données
   useEffect(() => {
     const initializeData = async () => {
       try {
         // Vérifier la session
-        const {
-          data: { session },
-          error: authError,
-        } = await supabase.auth.getSession();
+        const { data: { session }, error: authError } = await supabase.auth.getSession();
 
         if (authError) {
           console.error("Erreur d'authentification:", authError);
-          throw new Error(
-            "Erreur d'authentification. Veuillez vous reconnecter."
-          );
+          throw new Error("Erreur d'authentification. Veuillez vous reconnecter.");
         }
 
         if (!session) {
           navigate("/login");
           return;
+        }
+
+        // Récupérer le profil utilisateur
+        const { data: profile, error: profileError } = await supabase
+          .from("user_profiles")
+          .select("*")
+          .eq("user_id", session.user.id)
+          .single();
+
+        if (profileError && profileError.code !== "PGRST116") {
+          console.error("Erreur lors de la récupération du profil:", profileError);
+        } else if (profile) {
+          // Mettre à jour le taux de TVA avec vat_number du profil
+          setFormData(prev => ({
+            ...prev,
+            taux_tva: profile.vat_number || prev.taux_tva
+          }));
         }
 
         // Récupérer les clients

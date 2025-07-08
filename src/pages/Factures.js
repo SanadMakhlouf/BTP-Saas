@@ -13,7 +13,15 @@ const Factures = () => {
   const [clients, setClients] = useState([]);
   const [selectedFacture, setSelectedFacture] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusLoading, setStatusLoading] = useState(null);
   const navigate = useNavigate();
+
+  // Liste des statuts disponibles
+  const statusOptions = [
+    { value: "en_attente", label: "En attente" },
+    { value: "payee", label: "Payée" },
+    { value: "annulee", label: "Annulée" },
+  ];
 
   useEffect(() => {
     fetchFactures();
@@ -78,6 +86,35 @@ const Factures = () => {
       setClients(data || []);
     } catch (error) {
       console.error("Erreur lors de la récupération des clients:", error);
+    }
+  };
+
+  const handleStatusChange = async (factureId, newStatus) => {
+    try {
+      setStatusLoading(factureId);
+      const { error: updateError } = await supabase
+        .from("factures")
+        .update({ statut: newStatus })
+        .eq("id", factureId);
+
+      if (updateError) throw updateError;
+
+      // Mettre à jour l'état local
+      setFactures(
+        factures.map((f) =>
+          f.id === factureId ? { ...f, statut: newStatus } : f
+        )
+      );
+      setFilteredFactures(
+        filteredFactures.map((f) =>
+          f.id === factureId ? { ...f, statut: newStatus } : f
+        )
+      );
+    } catch (error) {
+      console.error("Erreur lors du changement de statut:", error);
+      setError("Erreur lors du changement de statut de la facture");
+    } finally {
+      setStatusLoading(null);
     }
   };
 
@@ -147,7 +184,19 @@ const Factures = () => {
         throw new Error("Facture non trouvée");
       }
 
-      const { data: userData } = await supabase.auth.getUser();
+      // Récupérer les informations du profil utilisateur
+      const { data: userProfile, error: profileError } = await supabase
+        .from("user_profiles")
+        .select("*")
+        .eq("user_id", factureData.user_id)
+        .single();
+
+      if (profileError && profileError.code !== "PGRST116") {
+        console.error(
+          "Erreur lors de la récupération du profil:",
+          profileError
+        );
+      }
 
       // Préparer les données pour le PDF
       const facturePDFData = {
@@ -156,7 +205,7 @@ const Factures = () => {
           prestations: factureData.devis.ouvrages.flatMap((o) => o.prestations),
         },
         client: factureData.devis.client,
-        user: userData.user,
+        userProfile: userProfile || null,
       };
 
       setSelectedFacture(facturePDFData);
@@ -246,9 +295,29 @@ const Factures = () => {
                     {formatMontant(facture.montant_ttc)}
                   </td>
                   <td>
-                    <span className={getStatusBadgeClass(facture.statut)}>
-                      {getStatusLabel(facture.statut)}
-                    </span>
+                    <div className="status-selector">
+                      <select
+                        value={facture.statut}
+                        onChange={(e) =>
+                          handleStatusChange(facture.id, e.target.value)
+                        }
+                        disabled={statusLoading === facture.id}
+                        className={`status-select ${getStatusBadgeClass(
+                          facture.statut
+                        )}`}
+                      >
+                        {statusOptions.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                      {statusLoading === facture.id && (
+                        <span className="status-loading">
+                          <i className="fas fa-spinner fa-spin"></i>
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="actions">
                     <div className="table-actions">

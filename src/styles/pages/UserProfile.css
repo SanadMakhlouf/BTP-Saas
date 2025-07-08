@@ -15,22 +15,47 @@
 }
 
 .profile-form {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+/* Pour les petits écrans */
+@media (max-width: 768px) {
+  .profile-form {
+    grid-template-columns: 1fr;
+  }
+}
+
+.form-section {
   background: white;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   padding: 2rem;
-}
-
-.form-section {
-  margin-bottom: 2rem;
-  padding-bottom: 2rem;
-  border-bottom: 1px solid #eee;
-}
-
-.form-section:last-child {
-  border-bottom: none;
   margin-bottom: 0;
-  padding-bottom: 0;
+}
+
+/* Section qui prend toute la largeur */
+.form-section.full-width {
+  grid-column: 1 / -1;
+}
+
+/* Sections spécifiques */
+.form-section.personal-info {
+  border-top: 4px solid #4a90e2;
+}
+
+.form-section.company-info {
+  border-top: 4px solid #45b97c;
+}
+
+.form-section.bank-info {
+  border-top: 4px solid #e4a853;
+}
+
+.form-section.settings {
+  border-top: 4px solid #8e44ad;
 }
 
 .form-section h2 {
@@ -38,20 +63,65 @@
   font-size: 1.5rem;
   margin-bottom: 1.5rem;
   font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Icônes pour les titres des sections */
+.form-section h2::before {
+  font-family: "Font Awesome 5 Free";
+  font-weight: 900;
+  font-size: 1.2rem;
+}
+
+.personal-info h2::before {
+  content: "\f007"; /* Icône utilisateur */
+  color: #4a90e2;
+}
+
+.company-info h2::before {
+  content: "\f1ad"; /* Icône entreprise */
+  color: #45b97c;
+}
+
+.bank-info h2::before {
+  content: "\f19c"; /* Icône banque */
+  color: #e4a853;
+}
+
+.settings h2::before {
+  content: "\f013"; /* Icône paramètres */
+  color: #8e44ad;
 }
 
 .form-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: 1.5rem;
 }
 
+/* Pour les petits écrans dans les sections */
+@media (max-width: 576px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .form-group {
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
 }
 
 .form-group.full-width {
   grid-column: 1 / -1;
+}
+
+.form-group.inline-group {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
 }
 
 .form-group label {
@@ -59,27 +129,39 @@
   margin-bottom: 0.5rem;
   color: #555;
   font-weight: 500;
+  font-size: 0.95rem;
 }
 
-.form-group input {
+.form-group input,
+.form-group textarea {
   width: 100%;
   padding: 0.75rem;
   border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 1rem;
-  transition: border-color 0.2s;
+  transition: all 0.2s ease;
+  background-color: #fff;
 }
 
-.form-group input:focus {
+.form-group input:focus,
+.form-group textarea:focus {
   outline: none;
   border-color: #4a90e2;
   box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.1);
+}
+
+.form-group textarea {
+  min-height: 100px;
+  resize: vertical;
 }
 
 .alert {
   padding: 1rem;
   border-radius: 4px;
   margin: 1rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .alert-error {
@@ -95,9 +177,15 @@
 }
 
 .form-actions {
+  grid-column: 1 / -1;
   margin-top: 2rem;
   display: flex;
   justify-content: flex-end;
+  gap: 1rem;
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .btn-save {
@@ -109,16 +197,25 @@
   font-size: 1rem;
   font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .btn-save:hover {
   background-color: #357abd;
+  transform: translateY(-1px);
+}
+
+.btn-save:active {
+  transform: translateY(0);
 }
 
 .btn-save:disabled {
   background-color: #9dc3eb;
   cursor: not-allowed;
+  transform: none;
 }
 
 .loading {
@@ -126,4 +223,39 @@
   padding: 2rem;
   color: #666;
   font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+/* Ajout d'animations pour les interactions */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.form-section {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Style pour les champs obligatoires */
+.required::after {
+  content: "*";
+  color: #dc2626;
+  margin-left: 4px;
+}
+
+/* Style pour les descriptions des sections */
+.section-description {
+  color: #666;
+  font-size: 0.9rem;
+  margin: -1rem 0 1.5rem;
+  line-height: 1.4;
 }

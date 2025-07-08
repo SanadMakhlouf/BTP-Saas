@@ -53,7 +53,16 @@ const UserProfile = () => {
       }
 
       if (data) {
-        setFormData(data);
+        setFormData({
+          ...data,
+          email: session.user.email,
+        });
+      } else {
+        // Si aucun profil n'existe, initialiser avec l'email de l'utilisateur
+        setFormData((prev) => ({
+          ...prev,
+          email: session.user.email,
+        }));
       }
 
       setLoading(false);
@@ -92,6 +101,7 @@ const UserProfile = () => {
         .upsert({
           user_id: session.user.id,
           ...formData,
+          email: session.user.email,
           updated_at: new Date().toISOString(),
         })
         .select()
@@ -144,6 +154,7 @@ const UserProfile = () => {
                 value={formData.email}
                 onChange={handleChange}
                 required
+                disabled
               />
             </div>
 

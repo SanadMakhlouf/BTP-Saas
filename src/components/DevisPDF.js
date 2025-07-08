@@ -26,6 +26,9 @@ const styles = StyleSheet.create({
     width: "35%",
     textAlign: "right",
   },
+  companyInfo: {
+    marginBottom: 30,
+  },
   title: {
     fontSize: 24,
     fontWeight: "bold",
@@ -95,7 +98,7 @@ const styles = StyleSheet.create({
   },
 });
 
-const DevisPDF = ({ devis, client, user }) => {
+const DevisPDF = ({ devis, client, userProfile }) => {
   // Formater les nombres en euros
   const formatMontant = (montant) => {
     return new Intl.NumberFormat("fr-FR", {
@@ -112,9 +115,25 @@ const DevisPDF = ({ devis, client, user }) => {
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        {/* En-tête */}
+        {/* En-tête avec informations de l'entreprise */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
+            {userProfile && (
+              <View style={styles.companyInfo}>
+                <Text style={styles.subtitle}>{userProfile.company_name}</Text>
+                <Text style={styles.text}>{userProfile.address}</Text>
+                <Text style={styles.text}>
+                  {userProfile.postal_code} {userProfile.city}
+                </Text>
+                {userProfile.phone && (
+                  <Text style={styles.text}>Tél : {userProfile.phone}</Text>
+                )}
+                <Text style={styles.text}>Email : {userProfile.email}</Text>
+                {userProfile.website && (
+                  <Text style={styles.text}>Web : {userProfile.website}</Text>
+                )}
+              </View>
+            )}
             <Text style={styles.title}>DEVIS</Text>
             <Text style={styles.text}>Référence : {devis.reference}</Text>
             <Text style={styles.text}>
@@ -217,13 +236,19 @@ const DevisPDF = ({ devis, client, user }) => {
           </View>
         )}
 
-        {/* Pied de page */}
-        <Text style={styles.footer}>
-          {user.nom_entreprise} - {user.adresse}, {user.code_postal}{" "}
-          {user.ville}
-          {"\n"}
-          SIRET : {user.siret} - TVA : {user.numero_tva}
-        </Text>
+        {/* Pied de page avec informations légales */}
+        {userProfile && (
+          <Text style={styles.footer}>
+            {userProfile.company_name} - {userProfile.address},{" "}
+            {userProfile.postal_code} {userProfile.city}
+            {"\n"}
+            SIRET : {userProfile.siret}
+            {userProfile.vat_number ? ` - TVA : ${userProfile.vat_number}` : ""}
+            {userProfile.bank_name ? `\nBanque : ${userProfile.bank_name}` : ""}
+            {userProfile.bank_iban ? ` - IBAN : ${userProfile.bank_iban}` : ""}
+            {userProfile.bank_bic ? ` - BIC : ${userProfile.bank_bic}` : ""}
+          </Text>
+        )}
       </Page>
     </Document>
   );

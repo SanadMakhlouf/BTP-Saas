@@ -243,12 +243,24 @@ const Devis = () => {
         throw new Error("Devis non trouvé");
       }
 
-      const { data: userData } = await supabase.auth.getUser();
+      // Récupérer les informations du profil utilisateur
+      const { data: userProfile, error: profileError } = await supabase
+        .from("user_profiles")
+        .select("*")
+        .eq("user_id", devisData.user_id)
+        .single();
+
+      if (profileError && profileError.code !== "PGRST116") {
+        console.error(
+          "Erreur lors de la récupération du profil:",
+          profileError
+        );
+      }
 
       setSelectedDevis({
         devis: devisData,
         client: devisData.client,
-        user: userData.user,
+        userProfile: userProfile || null,
       });
     } catch (error) {
       console.error("Erreur lors de la préparation du PDF:", error);
