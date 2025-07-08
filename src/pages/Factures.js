@@ -118,6 +118,26 @@ const Factures = () => {
     }
   };
 
+  const handleDelete = async (factureId) => {
+    if (window.confirm("Êtes-vous sûr de vouloir supprimer cette facture ?")) {
+      try {
+        const { error } = await supabase
+          .from("factures")
+          .delete()
+          .eq("id", factureId);
+
+        if (error) throw error;
+
+        // Mettre à jour l'état local
+        setFactures(factures.filter((f) => f.id !== factureId));
+        setFilteredFactures(filteredFactures.filter((f) => f.id !== factureId));
+      } catch (error) {
+        console.error("Erreur lors de la suppression:", error);
+        setError("Erreur lors de la suppression de la facture");
+      }
+    }
+  };
+
   const getClientName = (clientId) => {
     const client = clients.find((c) => c.id === clientId);
     return client ? client.nom : "Client inconnu";
@@ -322,18 +342,18 @@ const Factures = () => {
                   <td className="actions">
                     <div className="table-actions">
                       <button
-                        onClick={() => navigate(`/factures/${facture.id}`)}
-                        className="btn-action btn-view"
-                        title="Voir la facture"
-                      >
-                        Voir
-                      </button>
-                      <button
                         onClick={() => handlePreparePDF(facture.id)}
                         className="btn-action btn-download"
                         title="Télécharger en PDF"
                       >
-                        PDF
+                        <i className="fas fa-file-pdf"></i>
+                      </button>
+                      <button
+                        onClick={() => handleDelete(facture.id)}
+                        className="btn-action btn-delete"
+                        title="Supprimer la facture"
+                      >
+                        <i className="fas fa-trash"></i>
                       </button>
                     </div>
                   </td>

@@ -196,13 +196,6 @@ const Dashboard = () => {
                       }}
                     >
                       <Link
-                        to={`/devis/${devis.id}`}
-                        className="btn-action view"
-                        title="Voir le devis"
-                      >
-                        <i className="fas fa-eye"></i>
-                      </Link>
-                      <Link
                         to={`/modifier-devis/${devis.id}`}
                         className="btn-action edit"
                         title="Modifier le devis"

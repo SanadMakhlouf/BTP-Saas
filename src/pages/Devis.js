@@ -398,30 +398,19 @@ const Devis = () => {
                   </td>
                   <td className="actions">
                     <div className="table-actions">
-                      {devis.statut === "en_cours" ||
-                      devis.statut === "envoyé" ? (
-                        <Link
-                          to={`/modifier-devis/${devis.id}`}
-                          className="btn-action btn-edit"
-                          title="Modifier le devis"
-                        >
-                          Modifier
-                        </Link>
-                      ) : (
-                        <Link
-                          to={`/devis/${devis.id}`}
-                          className="btn-action btn-view"
-                          title="Voir le devis"
-                        >
-                          Voir
-                        </Link>
-                      )}
+                      <Link
+                        to={`/modifier-devis/${devis.id}`}
+                        className="btn-action btn-edit"
+                        title="Modifier le devis"
+                      >
+                        <i className="fas fa-edit"></i>
+                      </Link>
                       <button
                         onClick={() => handlePreparePDF(devis.id)}
                         className="btn-action btn-download"
                         title="Télécharger en PDF"
                       >
-                        PDF
+                        <i className="fas fa-file-pdf"></i>
                       </button>
                       <button
                         onClick={() => handleCreateFacture(devis)}
@@ -433,7 +422,7 @@ const Devis = () => {
                             : "Créer une facture"
                         }
                       >
-                        Facture
+                        <i className="fas fa-file-invoice"></i>
                       </button>
                     </div>
                   </td>
