@@ -97,6 +97,8 @@ const Devis = () => {
   const handleCreateFacture = async (devis) => {
     try {
       setLoading(true);
+      console.log("Creating facture from devis:", devis);
+
       const {
         data: { session },
       } = await supabase.auth.getSession();
@@ -170,6 +172,8 @@ const Devis = () => {
         })
         .select()
         .single();
+
+      console.log("Created facture:", newFacture);
 
       if (createError) {
         throw createError;

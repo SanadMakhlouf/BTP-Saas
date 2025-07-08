@@ -63,6 +63,9 @@ const Factures = () => {
         throw facturesError;
       }
 
+      console.log("Factures data:", facturesData);
+      console.log("First facture devis:", facturesData?.[0]?.devis);
+
       setFactures(facturesData || []);
       setLoading(false);
     } catch (error) {
@@ -200,6 +203,9 @@ const Factures = () => {
         .eq("id", factureId)
         .single();
 
+      console.log("Facture data for PDF:", factureData);
+      console.log("Devis data for PDF:", factureData?.devis);
+
       if (!factureData) {
         throw new Error("Facture non trouvée");
       }
@@ -301,7 +307,7 @@ const Factures = () => {
               {filteredFactures.map((facture) => (
                 <tr key={facture.id}>
                   <td>{facture.numero}</td>
-                  <td>{facture.devis?.numero || "N/A"}</td>
+                  <td>{facture.devis?.reference || "N/A"}</td>
                   <td className="client">
                     {getClientName(facture.devis?.client_id)}
                   </td>
