@@ -6,6 +6,8 @@ import "../styles/pages/Clients.css";
 const Clients = () => {
   const navigate = useNavigate();
   const [clients, setClients] = useState([]);
+  const [filteredClients, setFilteredClients] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showForm, setShowForm] = useState(false);
@@ -21,6 +23,18 @@ const Clients = () => {
     code_postal: "",
     ville: "",
   });
+
+  // Effet pour filtrer les clients quand searchTerm change
+  useEffect(() => {
+    if (searchTerm.trim() === "") {
+      setFilteredClients(clients);
+    } else {
+      const filtered = clients.filter((client) =>
+        client.nom.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setFilteredClients(filtered);
+    }
+  }, [searchTerm, clients]);
 
   useEffect(() => {
     const initializeData = async () => {
@@ -56,6 +70,7 @@ const Clients = () => {
         }
 
         setClients(clientsData || []);
+        setFilteredClients(clientsData || []);
       } catch (error) {
         console.error("Erreur complète:", error);
         setError(error.message || "Une erreur est survenue");
@@ -113,7 +128,7 @@ const Clients = () => {
       setLoading(false);
     }
   };
-  
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -177,7 +192,6 @@ const Clients = () => {
       );
     } finally {
       setLoading(false);
-      
     }
   };
 
@@ -209,18 +223,38 @@ const Clients = () => {
     <div className="clients-container">
       <div className="clients-header">
         <h1>Clients</h1>
-        <button
-          className="btn-add"
-          onClick={() => {
-            if (editingClient) {
-              handleCancelEdit();
-            } else {
-              setShowForm(!showForm);
-            }
-          }}
-        >
-          {showForm ? "Annuler" : "Ajouter un client"}
-        </button>
+        <div className="header-actions">
+          <div className="search-container">
+            <input
+              type="text"
+              placeholder="Rechercher un client..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="search-input"
+            />
+            {searchTerm && (
+              <button
+                className="clear-search"
+                onClick={() => setSearchTerm("")}
+                title="Effacer la recherche"
+              >
+                ×
+              </button>
+            )}
+          </div>
+          <button
+            className="btn-add"
+            onClick={() => {
+              if (editingClient) {
+                handleCancelEdit();
+              } else {
+                setShowForm(!showForm);
+              }
+            }}
+          >
+            {showForm ? "Annuler" : "Ajouter un client"}
+          </button>
+        </div>
       </div>
 
       {showForm && (
@@ -339,9 +373,11 @@ const Clients = () => {
       )}
 
       <div className="clients-list">
-        {clients.length === 0 ? (
+        {filteredClients.length === 0 ? (
           <div className="empty-state">
-            Aucun client pour le moment. Commencez par en ajouter un !
+            {searchTerm
+              ? "Aucun client ne correspond à votre recherche."
+              : "Aucun client pour le moment. Commencez par en ajouter un !"}
           </div>
         ) : (
           <div className="table-responsive">
@@ -358,7 +394,7 @@ const Clients = () => {
                 </tr>
               </thead>
               <tbody>
-                {clients.map((client) => (
+                {filteredClients.map((client) => (
                   <tr key={client.id}>
                     <td>{client.nom}</td>
                     <td>{client.email || "-"}</td>
