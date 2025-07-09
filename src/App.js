@@ -27,11 +27,11 @@ function App() {
   return (
     <Router>
       <div className="App">
-        <Navbar />
+       
         <Routes>
           {/* Routes publiques */}
           <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+          <Route path="/register/super-admin-register" element={<Register />} />
 
           {/* Routes protégées */}
           <Route
